@@ -1,0 +1,117 @@
+-- This script correctly implements the ERD, fixing data type mismatches,
+-- primary key definitions, and foreign key relationships.
+
+BEGIN;
+
+-- Create tables first to avoid dependency issues when adding foreign keys
+
+-- Table for 'Staff'
+CREATE TABLE staff (
+    staff_id SERIAL PRIMARY KEY,
+    staff_name VARCHAR(255) NOT NULL,
+    position VARCHAR(100),
+    hire_date DATE
+);
+
+-- Table for 'Sales Outlet'
+CREATE TABLE sales_outlet (
+    outlet_id SERIAL PRIMARY KEY,
+    outlet_name VARCHAR(255) NOT NULL,
+    location_address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL
+);
+
+-- Table for 'Customer'
+CREATE TABLE customer (
+    customer_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone_number NUMERIC,
+    address TEXT
+);
+
+-- Table for 'Product Category'
+CREATE TABLE product_category (
+    category_id SERIAL PRIMARY KEY,
+    category_name TEXT
+);
+
+-- Table for 'Product Type'
+CREATE TABLE product_type (
+    type_id SERIAL PRIMARY KEY,
+    type_name TEXT
+);
+
+-- Table for 'Product'
+CREATE TABLE product (
+    product_id SERIAL PRIMARY KEY,
+    type_id INTEGER NOT NULL,
+    category_id INTEGER,
+    product_name TEXT,
+    description TEXT,
+    current_price NUMERIC
+);
+
+-- Table for 'Sales transaction'
+CREATE TABLE sales_transaction (
+    transaction_id SERIAL PRIMARY KEY,
+    date DATE,
+    time TIME WITHOUT TIME ZONE,
+    outlet_id INTEGER NOT NULL,
+    customer_id INTEGER,
+    staff_id INTEGER NOT NULL
+);
+
+-- Table for 'Sales Detail' (linking table between sales and products)
+CREATE TABLE sales_detail (
+    transaction_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER,
+    price_at_sale NUMERIC(10, 2),
+    PRIMARY KEY (transaction_id, product_id)
+);
+
+
+-- Now, add the foreign key constraints after all tables are created
+
+-- Foreign keys for 'sales_transaction'
+ALTER TABLE sales_transaction
+    ADD CONSTRAINT fk_sales_transaction_outlet
+    FOREIGN KEY (outlet_id) REFERENCES sales_outlet(outlet_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+ALTER TABLE sales_transaction
+    ADD CONSTRAINT fk_sales_transaction_customer
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+ALTER TABLE sales_transaction
+    ADD CONSTRAINT fk_sales_transaction_staff
+    FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+
+-- Foreign keys for 'product'
+ALTER TABLE product
+    ADD CONSTRAINT fk_product_type
+    FOREIGN KEY (type_id) REFERENCES product_type(type_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+ALTER TABLE product
+    ADD CONSTRAINT fk_product_category
+    FOREIGN KEY (category_id) REFERENCES product_category(category_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+
+-- Foreign keys for 'sales_detail'
+ALTER TABLE sales_detail
+    ADD CONSTRAINT fk_sales_detail_transaction
+    FOREIGN KEY (transaction_id) REFERENCES sales_transaction(transaction_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+ALTER TABLE sales_detail
+    ADD CONSTRAINT fk_sales_detail_product
+    FOREIGN KEY (product_id) REFERENCES product(product_id)
+    ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+COMMIT;
