@@ -1,0 +1,92 @@
+Frontend.py
+import streamlit as st
+import backend as be
+import pandas as pd
+
+# --- App Configuration ---
+st.set_page_config(
+    page_title="Personalised Fitness Tracker",
+    page_icon="💪",
+    layout="wide"
+)
+
+st.title("💪 Personalised Fitness Tracker")
+st.markdown("Track your workouts, set goals, and gain insights into your fitness journey.")
+
+# --- User Simulation ---
+# In a real app, you would have a login system.
+# For this demo, we'll simulate a logged-in user.
+# Let's assume user 'alex_fit' with UserID = 1 exists in your database.
+USER_ID = 1
+USERNAME = "alex_fit"
+
+st.sidebar.header(f"Welcome, {USERNAME}!")
+
+# --- Main Application ---
+tab1, tab2, tab3 = st.tabs(["📊 Business Insights", "🏋️ Workout Log", "🎯 Goal Setter"])
+
+# --- Business Insights Tab ---
+with tab1:
+    st.header("Your Fitness Dashboard")
+    st.markdown("Here's a high-level overview of your activity.")
+    
+    insights = be.get_business_insights(USER_ID)
+    
+    if insights:
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Workouts", f"{insights.get('total_workouts', 0)} sessions")
+        col2.metric("Total Minutes Logged", f"{insights.get('total_minutes', 0)} min")
+        col3.metric("Active Goals", f"{insights.get('active_goals', 0)}")
+        
+        st.divider()
+
+        col4, col5, col6 = st.columns(3)
+        col4.metric("Avg. Workout Duration", f"{insights.get('avg_duration', 0)} min")
+        col5.metric("Longest Workout", f"{insights.get('longest_workout', 0)} min")
+        col6.metric("Shortest Workout", f"{insights.get('shortest_workout', 0)} min")
+
+# --- Workout Log Tab ---
+with tab2:
+    st.header("Log a New Workout")
+    
+    with st.form("workout_form", clear_on_submit=True):
+        workout_date = st.date_input("Workout Date")
+        duration = st.number_input("Duration (in minutes)", min_value=1, step=1)
+        notes = st.text_area("Notes (e.g., 'Felt strong today!')")
+        submitted = st.form_submit_button("Log Workout")
+        
+        if submitted:
+            be.create_workout(USER_ID, workout_date, duration, notes)
+            st.success("Workout logged successfully!")
+            
+    st.divider()
+    
+    st.subheader("Your Workout History")
+    workout_history = be.get_workouts_by_user(USER_ID)
+    if not workout_history.empty:
+        st.dataframe(workout_history, use_container_width=True)
+    else:
+        st.info("You haven't logged any workouts yet. Add one above to get started!")
+
+# --- Goal Setter Tab ---
+with tab3:
+    st.header("Set a New Fitness Goal")
+    
+    with st.form("goal_form", clear_on_submit=True):
+        goal_type = st.text_input("Goal (e.g., 'Run 10k', 'Lose 5kg')")
+        target_value = st.number_input("Target Value (e.g., 10 for 10k, 5 for 5kg)", min_value=0.1, step=0.1)
+        target_date = st.date_input("Target Date")
+        submitted_goal = st.form_submit_button("Set Goal")
+        
+        if submitted_goal:
+            be.create_goal(USER_ID, goal_type, target_value, target_date)
+            st.success("New goal set! You can do it!")
+
+    st.divider()
+
+    st.subheader("Your Current Goals")
+    user_goals = be.get_goals_by_user(USER_ID)
+    if not user_goals.empty:
+        st.dataframe(user_goals, use_container_width=True)
+    else:
+        st.info("You have no active goals. Set one above to challenge yourself!")
