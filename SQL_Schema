@@ -1,0 +1,63 @@
+-- Drop tables if they exist to ensure a fresh start
+DROP TABLE IF EXISTS feedback;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS goals;
+DROP TABLE IF EXISTS employees;
+
+-- Create the Employees table
+-- Stores basic information about each employee.
+CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    job_role VARCHAR(100)
+);
+
+-- Create the Goals table
+-- Each employee can have multiple goals.
+CREATE TABLE goals (
+    goal_id SERIAL PRIMARY KEY,
+    employee_id INT REFERENCES employees(employee_id) ON DELETE CASCADE,
+    goal_description TEXT NOT NULL,
+    target_date DATE,
+    status VARCHAR(50) CHECK (status IN ('Draft', 'In Progress', 'Completed', 'Cancelled'))
+);
+
+-- Create the Tasks table
+-- Each task is linked to an employee and an associated goal.
+CREATE TABLE tasks (
+    task_id SERIAL PRIMARY KEY,
+    employee_id INT REFERENCES employees(employee_id) ON DELETE CASCADE,
+    goal_id INT REFERENCES goals(goal_id) ON DELETE CASCADE,
+    task_description TEXT NOT NULL,
+    priority VARCHAR(50) CHECK (priority IN ('High', 'Medium', 'Low')),
+    status VARCHAR(50) CHECK (status IN ('To Do', 'In Progress', 'Done')),
+    outcome TEXT,
+    date DATE NOT NULL,
+    duration_hours NUMERIC(5, 2), -- e.g., 4.5 hours
+    approved BOOLEAN DEFAULT FALSE -- For manager approval
+);
+
+-- Create the Feedback table
+-- Feedback is provided on specific goals by managers or peers.
+CREATE TABLE feedback (
+    feedback_id SERIAL PRIMARY KEY,
+    goal_id INT REFERENCES goals(goal_id) ON DELETE CASCADE,
+    employee_id INT REFERENCES employees(employee_id) ON DELETE CASCADE, -- The employee receiving feedback
+    feedback_text TEXT NOT NULL,
+    feedback_date DATE DEFAULT CURRENT_DATE
+);
+
+-- Insert some sample data for demonstration
+INSERT INTO employees (name, email, job_role) VALUES
+('Alice Johnson', 'alice@example.com', 'Software Engineer'),
+('Bob Williams', 'bob@example.com', 'Project Manager');
+
+INSERT INTO goals (employee_id, goal_description, target_date, status) VALUES
+(1, 'Develop new reporting feature', '2025-12-31', 'In Progress'),
+(1, 'Complete advanced Python course', '2025-11-30', 'Completed');
+
+INSERT INTO tasks (employee_id, goal_id, task_description, priority, status, outcome, date, duration_hours, approved) VALUES
+(1, 1, 'Design the database schema for the reporting feature', 'High', 'Done', 'Schema diagram completed', '2025-10-15', 8.0, TRUE),
+(1, 1, 'Develop the backend API endpoints', 'High', 'In Progress', 'API in development', '2025-10-20', 12.5, TRUE),
+(1, 2, 'Finish module 5 of the Python course', 'Medium', 'Done', 'Module 5 quiz passed', '2025-10-10', 4.0, TRUE);
